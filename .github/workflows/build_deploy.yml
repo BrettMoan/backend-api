@@ -26,10 +26,10 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Build Lambda package
+      - name: Build Api
         run: |
           mkdir -p package
-          uv pip install -r backend_api/pyproject.toml --production -t package/
+          uv pip install -r backend_api/pyproject.toml -t package/
           cp -r backend_api/*.py package/
           cp -r backend_api/static package/
           cd package
