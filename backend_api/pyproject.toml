@@ -1,0 +1,23 @@
+[project]
+name = "backend_api"
+version = "0.1.0"
+description = "FastAPI serverless boilerplate"
+authors = ["Brett Moan <6159590+BrettMoan@users.noreply.github.com>"]
+requires-python = ">=3.11"
+dependencies = [
+    "boto3",
+    "fastapi",
+    "uvicorn",
+    "mangum"
+]
+
+[tool.uv]
+# uv will use this section for dependency management
+
+[project.optional-dependencies]
+local = [
+    "uvicorn",
+    "pytest",
+    "flake8",
+    "httpx"
+]
