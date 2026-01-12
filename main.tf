@@ -1,7 +1,7 @@
 
 
 data "aws_iam_role" "lambda_exec" {
-  name = "lambda_exec_role"
+  name = "backend-api-lambda-role"
 }
 
 resource "aws_lambda_function" "fastapi" {
