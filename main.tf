@@ -1,8 +1,12 @@
 
+data "aws_iam_role" "lambda_exec" {
+  name = "lambda_exec_role"
+}
+
 resource "aws_lambda_function" "fastapi" {
   filename         = "backend_api.zip"
   function_name    = "fastapi-serverless-api"
-  role             = aws_iam_role.lambda_exec.arn
+  role             = data.aws_iam_role.lambda_exec.arn
   handler          = "backend_api.handler.handler"
   runtime          = "python3.11"
   source_code_hash = filebase64sha256("backend_api.zip")
