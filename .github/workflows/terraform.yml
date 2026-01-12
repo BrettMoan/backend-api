@@ -22,13 +22,31 @@ jobs:
         with:
           terraform_version: 1.14.3
 
-      - name: Terraform Init
-        run: terraform init
+      - name: Configure AWS credentials for OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::655366068412:role/backend-api
+          aws-region: us-east-1
+
+      - name: Set Terraform Environment_Bucket 
+        id: tf_bucket
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/prod/* ]]; then
+            env=prod
+          elif [[ "${GITHUB_REF}" == refs/tags/stg/* ]]; then
+            env=stg
+          elif [[ "${GITHUB_REF}" == refs/heads/main ]]; then
+            env=qa
+          else
+            env=dev
+          fi
+          echo "env=$env" >> $GITHUB_OUTPUT
+          terraform init -backend-config="bucket=brettmoan-$env-tfstate-a5d103ec"
 
       - name: Terraform Plan
         run: terraform plan
 
       # Uncomment to enable apply on push to main
-      # - name: Terraform Apply
-      #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      #   run: terraform apply -auto-approve
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
