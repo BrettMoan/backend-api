@@ -142,3 +142,6 @@ cython_debug/
 
 # VS Code
 .vscode/
+backend_api.zip
+package/
+requirements.txt
