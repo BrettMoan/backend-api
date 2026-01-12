@@ -30,7 +30,7 @@ jobs:
         run: |
             mkdir -p package
             uv export --frozen --no-dev --no-editable -o requirements.txt
-            uv pip install -- -r requirements.txt --target package/
+            uv pip install -r requirements.txt --target package/
             cp -r backend_api/*.py package/
             cp -r backend_api/static package/
             cd package
