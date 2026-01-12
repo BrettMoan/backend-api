@@ -1,22 +1,33 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi import status
-from typing import List, Optional
+"""
+Docstring for backend_api.main
+"""
 import os
 import uuid
 from datetime import datetime, timezone
+from typing import List, Optional
+
+from fastapi import FastAPI, HTTPException, status
+from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend_api.models import Task, TaskUpdate
 from backend_api.db import tasks_table
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+# Enable CORS for all origins (adjust as needed for production)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/")
-def read_root():
-    return {"message": "Hello from FastAPI serverless!"}
+## we wouldn't do this in prod, but for demo purposes we can just serve the docs as the root
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    return RedirectResponse(url="/docs")
 
 @app.get("/favicon.ico")
 def favicon():
@@ -43,13 +54,14 @@ def create_task(task: TaskUpdate):
 
 # List all tasks (excluding deleted)
 @app.get("/tasks", response_model=List[Task])
-def list_tasks(status: Optional[str] = None, tag: Optional[str] = None):
+def list_tasks(status: Optional[str] = None):
     scan_kwargs = {
         "FilterExpression": "deleted = :d",
         "ExpressionAttributeValues": {":d": False}
     }
     if status:
-        scan_kwargs["FilterExpression"] += " AND status = :s"
+        scan_kwargs["FilterExpression"] += " AND #st = :s"
+        scan_kwargs.setdefault("ExpressionAttributeNames", {})["#st"] = "status"
         scan_kwargs["ExpressionAttributeValues"][":s"] = status
     # DynamoDB doesn't support contains in FilterExpression for lists in scan, so we skip tag filtering for demo simplicity
     response = tasks_table.scan(**scan_kwargs)
@@ -72,7 +84,7 @@ def update_task(task_id: str, update: TaskUpdate):
     if not item or item.get("deleted"):
         raise HTTPException(status_code=404, detail="Task not found")
     updated = item.copy()
-    for field, value in update.dict(exclude_unset=True).items():
+    for field, value in update.model_dump(exclude_unset=True).items():
         updated[field] = value
     updated["updated_at"] = datetime.now(timezone.utc).isoformat()
     tasks_table.put_item(Item=updated)
@@ -96,8 +108,8 @@ def delete_task(task_id: str):
 def trigger_task_event(task_id: str):
     response = tasks_table.get_item(Key={"id": task_id})
     item = response.get("Item")
-    if not item or item.get("deleted"):
+    if not item:
         raise HTTPException(status_code=404, detail="Task not found")
-    # Here you would send a message to SQS/EventBridge
+    # TODO: send a message to SQS/EventBridge
     # For demo, just return accepted
     return {"message": f"Async event triggered for task {task_id}"}
