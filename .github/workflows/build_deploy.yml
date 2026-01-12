@@ -1,4 +1,5 @@
-name: 'Terraform CI'
+name: 'Build and Deploy CI'
+
 
 on:
   push:
@@ -11,11 +12,28 @@ permissions:
   contents: read
 
 jobs:
-  terraform:
+  build_deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Build Lambda package
+        run: |
+          mkdir -p package
+          uv pip install -r backend_api/pyproject.toml --production -t package/
+          cp -r backend_api/*.py package/
+          cp -r backend_api/static package/
+          cd package
+          zip -r ../backend_api.zip .
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -28,7 +46,7 @@ jobs:
           role-to-assume: arn:aws:iam::655366068412:role/backend-api
           aws-region: us-east-1
 
-      - name: Set Terraform Environment_Bucket 
+      - name: Set Terraform Environment_Bucket
         id: tf_bucket
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/prod/* ]]; then
