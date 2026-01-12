@@ -28,13 +28,13 @@ jobs:
 
       - name: Build Api
         run: |
-          mkdir -p package
-          uv pip install -r backend_api/pyproject.toml -t package/
-          cp -r backend_api/*.py package/
-          cp -r backend_api/static package/
-          cd package
-          zip -r ../backend_api.zip .
-
+            mkdir -p package
+            uv export --frozen --no-dev --no-editable -o requirements.txt
+            uv pip install -- -r requirements.txt --target package/
+            cp -r backend_api/*.py package/
+            cp -r backend_api/static package/
+            cd package
+            zip -r ../backend_api.zip .
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
